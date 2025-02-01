@@ -22,7 +22,6 @@ This application processes PDF files, extracts coding problems (C++), generates 
 -   Generate C++ solutions using the Gemini API.
 -   Provide a summary of the PDF content.
 -   Download generated solutions.
--   Display previously processed PDFs.
 
 ## Installation
 
