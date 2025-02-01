@@ -53,23 +53,41 @@ app.post('/api/process-pdf', upload.single('pdfFile'), async (req, res) => {
         const dataBuffer = fs.readFileSync(pdfPath);
 
         const data = await pdf(dataBuffer);
-        const pdfText = data.text;
+        let pdfText = data.text;
 
+        // Find the index of the first "Q1"
+        const q1Index = pdfText.indexOf("Q1");
+
+        // If "Q1" is found, extract text from that point onwards
+        if (q1Index !== -1) {
+            pdfText = pdfText.substring(q1Index);
+        }
         // Extract coding problems (this is a simple example; you might need more robust logic)
-        const problemRegex = /[\d]\.\s*(.*?)(?=\n\d\.\s*|$)/gs; // Matches lines starting with numbers and a period
+       const problemRegex = /(Q\d+\s*[\s\S]*?)(?=Q\d+\s*|$)/g; // Match questions starting with Q1, Q2, etc.
         const problems = Array.from(pdfText.matchAll(problemRegex), m => m[1].trim());
 
-
         let solutionsText = "";
+        const userString = "23103007 Yash Gupta"; // Define the string here.
         for (let i = 0; i < problems.length; i++) {
             const problem = problems[i];
-            const prompt = `Provide the C++ code without comments, using namespace std for this coding problem: ${problem}`;
+            const prompt = `Provide the C++ code without comments, using namespace std for this coding problem: ${problem} ONLY GIVE CODE`;
             const result = await model.generateContent(prompt);
             const geminiResponse = await result.response;
-            const generatedSolution = geminiResponse.text();
+            let generatedSolution = geminiResponse.text();
+            generatedSolution = generatedSolution.replace(/```cpp\s*|```/g, ''); // Remove ```cpp ``` and ```
             solutionsText += `Question ${i + 1}:\n${generatedSolution}\n\n`;
         }
-        const solutionsFileName = `${Date.now()}-solutions.txt`;
+
+       let baseFileName = `${userString}-solutions.txt`; // Create base file name
+        let solutionsFileName = baseFileName;
+        let index = 1;
+
+        while (fs.existsSync(path.join('solutions', solutionsFileName))) {
+            const fileNameParts = baseFileName.split('.txt');
+            solutionsFileName = `${fileNameParts[0]}-${index}.txt`;
+            index++;
+        }
+
         const solutionsFilePath = path.join('solutions', solutionsFileName);
         fs.mkdirSync(path.dirname(solutionsFilePath), { recursive: true }); // Create the solutions directory if it doesn't exist
         fs.writeFileSync(solutionsFilePath, solutionsText);
