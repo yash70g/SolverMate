@@ -28,11 +28,6 @@ npm start
 npm start
 ```
 
-3. **Use:** Access at `http://localhost:5173`
-   - Upload PDF
-   - View generated solutions
-   - Download results
-
 ## Project Structure
 ```
 PDF-Processor-App/
